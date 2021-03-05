@@ -99,6 +99,9 @@ AppManagerPrivate::AppManagerPrivate()
     , errorLog()
     , hardwareThreadCount(0)
     , physicalThreadCount(0)
+#if PY_MAJOR_VERSION >= 3
+    , commandLineArgsWide()
+#endif
     , commandLineArgsUtf8()
     , nArgs(0)
     , mainModule(0)
