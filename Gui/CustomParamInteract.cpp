@@ -31,6 +31,7 @@
 #include <QtCore/QThread>
 #include <QtCore/QCoreApplication>
 #include <QMouseEvent>
+#include <QWindow>
 #include <QtCore/QByteArray>
 
 #include "Engine/OverlayInteractBase.h"
