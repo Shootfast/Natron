@@ -2975,37 +2975,35 @@ AppManager::getPluginIDs(const std::string& filter)
     return ret;
 }
 
+PyObject*
+NATRON_PYTHON_NAMESPACE::StdStringToPyString(const std::string& str)
+{
+    ///Must be locked
+    assert( PyThreadState_Get() );
+#if PY_MAJOR_VERSION >= 3
+    return PyUnicode_FromString(str.c_str());
+#else
+    return PyString_FromString(str.c_str());
+#endif
+}
 
 std::string
 NATRON_PYTHON_NAMESPACE::PyStringToStdString(PyObject* obj)
 {
     ///Must be locked
     assert( PyThreadState_Get() );
+    PyObject *s = nullptr;
     std::string ret;
 
-    if ( PyString_Check(obj) ) {
-        char* buf = PyString_AsString(obj);
-        if (buf) {
-            ret += std::string(buf);
-        }
-    } else if ( PyUnicode_Check(obj) ) {
-        /*PyObject * temp_bytes = PyUnicode_AsEncodedString(obj, "ASCII", "strict"); // Owned reference
-           if (temp_bytes != NULL) {
-           char* cstr = PyBytes_AS_STRING(temp_bytes); // Borrowed pointer
-           ret.append(cstr);
-           Py_DECREF(temp_bytes);
-           }*/
-        PyObject* utf8pyobj = PyUnicode_AsUTF8String(obj); // newRef
-        if (utf8pyobj) {
-            char* cstr = PyBytes_AS_STRING(utf8pyobj); // Borrowed pointer
-            ret.append(cstr);
-            Py_DECREF(utf8pyobj);
-        }
-    } else if ( PyBytes_Check(obj) ) {
-        char* cstr = PyBytes_AS_STRING(obj); // Borrowed pointer
-        ret.append(cstr);
+    if (PyUnicode_Check(obj)){
+        s = PyUnicode_AsUTF8String(obj);
+    } else if (PyBytes_Check(obj)){
+        s = PyObject_Bytes(obj);
     }
-
+    if (s){
+        ret = std::string(PyBytes_AsString(s));
+        Py_XDECREF(s);
+    }
     return ret;
 }
 
@@ -3687,14 +3685,15 @@ NATRON_PYTHON_NAMESPACE::interpretPythonScript(const std::string& script,
 
             PyObject* pyStr = PyObject_Str(pyExcValue);
             if (pyStr) {
-                const char* str = PyString_AsString(pyStr);
-                if (error && str) {
-                    *error += std::string("Python exception: ") + str + '\n';
+                std::string str = PyStringToStdString(pyStr);
+                const char* cstr = str.c_str();
+                if (error && cstr) {
+                    *error += std::string("Python exception: ") + cstr + '\n';
                 }
                 Py_DECREF(pyStr);
 
                 // See if we can get a full traceback
-                PyObject* module_name = PyString_FromString("traceback");
+                PyObject* module_name = StdStringToPyString("traceback");
                 PyObject* pyth_module = PyImport_Import(module_name);
                 Py_DECREF(module_name);
 
@@ -3709,16 +3708,17 @@ NATRON_PYTHON_NAMESPACE::interpretPythonScript(const std::string& script,
                     if (pyth_func && PyCallable_Check(pyth_func)) {
                         PyObject *pyth_val = PyObject_CallFunctionObjArgs(pyth_func, pyExcType, pyExcValue, pyExcTraceback, NULL);
                         if (pyth_val) {
-                            PyObject *emptyString = PyString_FromString("");
+                            PyObject *emptyString = StdStringToPyString("");
                             PyObject *strList = PyObject_CallMethod(emptyString, (char*)"join", (char*)"(O)", pyth_val);
                             Py_DECREF(emptyString);
                             Py_DECREF(pyth_val);
                             pyStr = PyObject_Str(strList);
                             Py_DECREF(strList);
                             if (pyStr) {
-                                str = PyString_AsString(pyStr);
-                                if (error && str) {
-                                    *error += std::string(str) + '\n';
+                                str = PyStringToStdString(pyStr);
+                                cstr = str.c_str();
+                                if (error && cstr) {
+                                    *error += std::string(cstr) + '\n';
                                 }
                                 Py_DECREF(pyStr);
                             }

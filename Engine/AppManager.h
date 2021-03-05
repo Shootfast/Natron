@@ -689,6 +689,7 @@ std::string getPythonStdErr();
 
 //void compilePyScript(const std::string& script,PyObject** code);
 
+PyObject* StdStringToPyString(const std::string& str);
 std::string PyStringToStdString(PyObject* obj);
 std::string makeNameScriptFriendlyWithDots(const std::string& str);
 std::string makeNameScriptFriendly(const std::string& str);

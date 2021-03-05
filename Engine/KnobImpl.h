@@ -53,6 +53,7 @@ CLANG_DIAG_ON(mismatched-tags)
 GCC_DIAG_ON(unused-parameter)
 
 #include "Engine/Curve.h"
+#include "Engine/AppManager.h"
 #include "Engine/AppInstance.h"
 #include "Engine/Project.h"
 #include "Engine/EffectInstance.h"
@@ -398,26 +399,20 @@ template <>
 std::string
 KnobHelper::pyObjectToType(PyObject* o)
 {
-    if ( PyUnicode_Check(o) ) {
-        std::string ret;
-        PyObject* utf8pyobj = PyUnicode_AsUTF8String(o); // newRef
-        if (utf8pyobj) {
-            char* cstr = PyBytes_AS_STRING(utf8pyobj); // Borrowed pointer
-            ret.append(cstr);
-            Py_DECREF(utf8pyobj);
-        }
-
-        return ret;
-    }
-    char* s = PyString_Check(o) ? PyString_AsString(o) : NULL;
-    return s != NULL ? std::string(s) : std::string();
+    return Natron::Python::PyStringToStdString(o);
 }
 
 template <>
 std::string
 KnobHelper::pyObjectToType(PyObject* o, DimIdx /*dim*/, ViewIdx /*view*/) const
 {
-    if (PyUnicode_Check(o) || PyString_Check(o)) {
+    if (PyUnicode_Check(o)
+#if PY_MAJOR_VERSION < 3
+// In > Python 2 all strings are PyUnicode objects,
+// and can't perform the PyString check
+                           || PyString_Check(o)
+#endif
+    ) {
         return pyObjectToType<std::string>(o);
     }
     return std::string();

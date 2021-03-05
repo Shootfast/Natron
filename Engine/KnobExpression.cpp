@@ -725,7 +725,13 @@ KnobHelperPrivate::validatePythonExpression(const string& expression,
             *resultAsString = r ? "True" : "False";
         } else {
             assert(isString);
-            if ( PyUnicode_Check(ret) || PyString_Check(ret) ) {
+            if ( PyUnicode_Check(ret)
+#if PY_MAJOR_VERSION < 3
+// In > Python 2 all strings are PyUnicode objects,
+// and can't perform the PyString check
+                                      || PyString_Check(ret)
+#endif
+            ) {
                 *resultAsString = isString->pyObjectToType<string>(ret);
             } else {
             }
@@ -1393,9 +1399,12 @@ KnobHelper::evaluateExpression(const string& expr,
         if ( PyFloat_Check(ret) ) {
             *retIsScalar =  (double)PyFloat_AsDouble(ret);
             retCode =  eExpressionReturnValueTypeScalar;
+#if PY_MAJOR_VERSION < 3
+// Python 3 doesn't have PyInt, all integers are PyLong
         } else if ( PyInt_Check(ret) ) {
             *retIsScalar = (double)PyInt_AsLong(ret);
             retCode =  eExpressionReturnValueTypeScalar;
+#endif
         } else if ( PyLong_Check(ret) ) {
             *retIsScalar = (double)PyLong_AsLong(ret);
             retCode =  eExpressionReturnValueTypeScalar;
