@@ -22,7 +22,6 @@
 #include "Global/Macros.h"
 
 #include <QtCore/QtGlobal> // for Q_OS_*
-#if QT_VERSION < QT_VERSION_CHECK(5, 0, 0)
 #include <QtCore/QDir>
 #include <QtCore/QString>
 
@@ -35,6 +34,7 @@ removeRecursively(const QString & dirName)
     bool result = false;
     QDir dir(dirName);
 
+#if QT_VERSION < QT_VERSION_CHECK(5, 0, 0)
     if ( dir.exists(dirName) ) {
         Q_FOREACH( QFileInfo info, dir.entryInfoList(QDir::NoDotAndDotDot | QDir::System | QDir::Hidden  | QDir::AllDirs | QDir::Files, QDir::DirsFirst) ) {
             if ( info.isDir() ) {
@@ -49,16 +49,15 @@ removeRecursively(const QString & dirName)
         }
         result = dir.rmdir(dirName);
     }
-
+#else
+    result = dir.removeRecursively();
+#endif
     return result;
 }
 } // namespace QtCompat
 
 NATRON_NAMESPACE_EXIT
 
-#endif
-
-#include <QtCore/QString>
 #include <QtCore/QUrl>
 #include <QtCore/QFileInfo>
 
